@@ -1,4 +1,6 @@
 import crypto from "node:crypto";
+import { readFileSync } from "node:fs";
+import { join as pathJoin } from "node:path";
 import { resolveSessionAuthProfileOverride } from "../../agents/auth-profiles/session-override.js";
 import type { ExecToolDefaults } from "../../agents/bash-tools.js";
 import { resolveFastModeState } from "../../agents/fast-mode.js";
@@ -469,8 +471,20 @@ export async function runPreparedReply(
     isNewSession,
   });
   const authProfileIdSource = sessionEntry?.authProfileOverrideSource;
+  // Inject TASKFLOW_STATE.md into every prompt if it exists in workspace
+  let injectedBody = queuedBody;
+  try {
+    const taskflowStatePath = pathJoin(workspaceDir, "TASKFLOW_STATE.md");
+    const taskflowContent = readFileSync(taskflowStatePath, "utf-8").trim();
+    if (taskflowContent) {
+      injectedBody = `${queuedBody}\n\n<taskflow-context>\n${taskflowContent}\n</taskflow-context>`;
+    }
+  } catch {
+    // TASKFLOW_STATE.md doesn't exist or can't be read — skip silently
+  }
+
   const followupRun = {
-    prompt: queuedBody,
+    prompt: injectedBody,
     messageId: sessionCtx.MessageSidFull ?? sessionCtx.MessageSid,
     summaryLine: baseBodyTrimmedRaw,
     enqueuedAt: Date.now(),

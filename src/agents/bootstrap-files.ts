@@ -55,7 +55,7 @@ function applyContextModeFilter(params: {
     return params.files;
   }
   if (runKind === "heartbeat") {
-    return params.files.filter((file) => file.name === "HEARTBEAT.md");
+    return params.files.filter((file) => file.name === "HEARTBEAT.md" || file.name === "TASKFLOW_STATE.md");
   }
   // cron/default lightweight mode keeps bootstrap context empty on purpose.
   return [];
